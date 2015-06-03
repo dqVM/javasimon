@@ -1,0 +1,431 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html lang="en">
+<head>
+<title>Source code</title>
+<link rel="stylesheet" type="text/css" href="../../../../stylesheet.css" title="Style">
+</head>
+<body>
+<div class="sourceContainer">
+<pre><span class="sourceLineNo">001</span>package org.javasimon.javaee;<a name="line.1"></a>
+<span class="sourceLineNo">002</span><a name="line.2"></a>
+<span class="sourceLineNo">003</span>import org.javasimon.Manager;<a name="line.3"></a>
+<span class="sourceLineNo">004</span>import org.javasimon.SimonManager;<a name="line.4"></a>
+<span class="sourceLineNo">005</span>import org.javasimon.Split;<a name="line.5"></a>
+<span class="sourceLineNo">006</span>import org.javasimon.callback.CallbackSkeleton;<a name="line.6"></a>
+<span class="sourceLineNo">007</span>import org.javasimon.clock.SimonClock;<a name="line.7"></a>
+<span class="sourceLineNo">008</span>import org.javasimon.javaee.reqreporter.RequestReporter;<a name="line.8"></a>
+<span class="sourceLineNo">009</span>import org.javasimon.source.DisabledMonitorSource;<a name="line.9"></a>
+<span class="sourceLineNo">010</span>import org.javasimon.source.StopwatchSource;<a name="line.10"></a>
+<span class="sourceLineNo">011</span>import org.javasimon.utils.Replacer;<a name="line.11"></a>
+<span class="sourceLineNo">012</span>import org.javasimon.utils.SimonUtils;<a name="line.12"></a>
+<span class="sourceLineNo">013</span>import org.javasimon.utils.bean.SimonBeanUtils;<a name="line.13"></a>
+<span class="sourceLineNo">014</span>import org.javasimon.utils.bean.ToEnumConverter;<a name="line.14"></a>
+<span class="sourceLineNo">015</span><a name="line.15"></a>
+<span class="sourceLineNo">016</span>import javax.servlet.*;<a name="line.16"></a>
+<span class="sourceLineNo">017</span>import javax.servlet.http.HttpServletRequest;<a name="line.17"></a>
+<span class="sourceLineNo">018</span>import javax.servlet.http.HttpServletResponse;<a name="line.18"></a>
+<span class="sourceLineNo">019</span>import java.io.IOException;<a name="line.19"></a>
+<span class="sourceLineNo">020</span>import java.util.ArrayList;<a name="line.20"></a>
+<span class="sourceLineNo">021</span>import java.util.List;<a name="line.21"></a>
+<span class="sourceLineNo">022</span><a name="line.22"></a>
+<span class="sourceLineNo">023</span>/**<a name="line.23"></a>
+<span class="sourceLineNo">024</span> * Simon Servlet filter measuring HTTP request execution times. Non-HTTP usages are not supported.<a name="line.24"></a>
+<span class="sourceLineNo">025</span> * Filter provides these functions:<a name="line.25"></a>
+<span class="sourceLineNo">026</span> * &lt;ul&gt;<a name="line.26"></a>
+<span class="sourceLineNo">027</span> * &lt;li&gt;measures all requests and creates tree of Simons with names derived from URLs&lt;/li&gt;<a name="line.27"></a>
+<span class="sourceLineNo">028</span> * &lt;li&gt;checks if the request is not longer then a specified threshold and logs warning&lt;/li&gt;<a name="line.28"></a>
+<span class="sourceLineNo">029</span> * &lt;li&gt;provides basic "console" function if config parameter {@link #INIT_PARAM_SIMON_CONSOLE_PATH} is used in {@code web.xml}&lt;/li&gt;<a name="line.29"></a>
+<span class="sourceLineNo">030</span> * &lt;/ul&gt;<a name="line.30"></a>
+<span class="sourceLineNo">031</span> * &lt;p/&gt;<a name="line.31"></a>
+<span class="sourceLineNo">032</span> * All constants are public and fields protected for easy extension of the class. Following protected methods<a name="line.32"></a>
+<span class="sourceLineNo">033</span> * and classes are provided to override the default function:<a name="line.33"></a>
+<span class="sourceLineNo">034</span> * &lt;ul&gt;<a name="line.34"></a>
+<span class="sourceLineNo">035</span> * &lt;li&gt;{@link #shouldBeReported} - compares actual request nano time with {@link #getThreshold(javax.servlet.http.HttpServletRequest)}<a name="line.35"></a>
+<span class="sourceLineNo">036</span> * (which may become unused if this method is overridden)&lt;/li&gt;<a name="line.36"></a>
+<span class="sourceLineNo">037</span> * &lt;li&gt;{@link #getThreshold(javax.servlet.http.HttpServletRequest)} - returns threshold configured in {@code web.xml}&lt;/li&gt;<a name="line.37"></a>
+<span class="sourceLineNo">038</span> * &lt;li&gt;{@link org.javasimon.javaee.reqreporter.RequestReporter} can be implemented and specified using init parameter {@link #INIT_PARAM_REQUEST_REPORTER_CLASS}&lt;/li&gt;<a name="line.38"></a>
+<span class="sourceLineNo">039</span> * &lt;li&gt;{@link HttpStopwatchSource} can be subclassed and specified using init parameter {@link #INIT_PARAM_STOPWATCH_SOURCE_CLASS}, specifically<a name="line.39"></a>
+<span class="sourceLineNo">040</span> * following methods are intended for override:<a name="line.40"></a>
+<span class="sourceLineNo">041</span> * &lt;ul&gt;<a name="line.41"></a>
+<span class="sourceLineNo">042</span> * &lt;li&gt;{@link HttpStopwatchSource#isMonitored(javax.servlet.http.HttpServletRequest)} - true except for request with typical resource suffixes<a name="line.42"></a>
+<span class="sourceLineNo">043</span> * ({@code .gif}, {@code .jpg}, {@code .css}, etc.)&lt;/li&gt;<a name="line.43"></a>
+<span class="sourceLineNo">044</span> * &lt;li&gt;{@link HttpStopwatchSource#getMonitorName(javax.servlet.http.HttpServletRequest)}&lt;/li&gt;<a name="line.44"></a>
+<span class="sourceLineNo">045</span> * &lt;/ul&gt;&lt;/li&gt;<a name="line.45"></a>
+<span class="sourceLineNo">046</span> * &lt;/ul&gt;<a name="line.46"></a>
+<span class="sourceLineNo">047</span> *<a name="line.47"></a>
+<span class="sourceLineNo">048</span> * @author &lt;a href="mailto:virgo47@gmail.com"&gt;Richard "Virgo" Richter&lt;/a&gt;<a name="line.48"></a>
+<span class="sourceLineNo">049</span> * @since 2.3<a name="line.49"></a>
+<span class="sourceLineNo">050</span> */<a name="line.50"></a>
+<span class="sourceLineNo">051</span>@SuppressWarnings("UnusedParameters")<a name="line.51"></a>
+<span class="sourceLineNo">052</span>public class SimonServletFilter implements Filter {<a name="line.52"></a>
+<span class="sourceLineNo">053</span>        /**<a name="line.53"></a>
+<span class="sourceLineNo">054</span>         * Name of filter init parameter for Simon name prefix.<a name="line.54"></a>
+<span class="sourceLineNo">055</span>         */<a name="line.55"></a>
+<span class="sourceLineNo">056</span>        public static final String INIT_PARAM_PREFIX = "prefix";<a name="line.56"></a>
+<span class="sourceLineNo">057</span><a name="line.57"></a>
+<span class="sourceLineNo">058</span>        /**<a name="line.58"></a>
+<span class="sourceLineNo">059</span>         * Name of filter init parameter that sets the value of threshold in milliseconds for maximal<a name="line.59"></a>
+<span class="sourceLineNo">060</span>         * request duration beyond which all splits will be dumped to log. The actual threshold can be<a name="line.60"></a>
+<span class="sourceLineNo">061</span>         * further customized overriding {@link #getThreshold(javax.servlet.http.HttpServletRequest)} method,<a name="line.61"></a>
+<span class="sourceLineNo">062</span>         * but this parameter has to be set to non-null value to enable threshold reporting feature (0 for instance).<a name="line.62"></a>
+<span class="sourceLineNo">063</span>         */<a name="line.63"></a>
+<span class="sourceLineNo">064</span>        public static final String INIT_PARAM_REPORT_THRESHOLD_MS = "report-threshold-ms";<a name="line.64"></a>
+<span class="sourceLineNo">065</span><a name="line.65"></a>
+<span class="sourceLineNo">066</span>        /**<a name="line.66"></a>
+<span class="sourceLineNo">067</span>         * Name of filter init parameter that sets relative ULR path that will provide Simon console page.<a name="line.67"></a>
+<span class="sourceLineNo">068</span>         * If the parameter is not used, basic plain text console will be disabled.<a name="line.68"></a>
+<span class="sourceLineNo">069</span>         */<a name="line.69"></a>
+<span class="sourceLineNo">070</span>        public static final String INIT_PARAM_SIMON_CONSOLE_PATH = "console-path";<a name="line.70"></a>
+<span class="sourceLineNo">071</span><a name="line.71"></a>
+<span class="sourceLineNo">072</span>        /**<a name="line.72"></a>
+<span class="sourceLineNo">073</span>         * FQN of the Stopwatch source class implementing {@link org.javasimon.source.MonitorSource}.<a name="line.73"></a>
+<span class="sourceLineNo">074</span>         * One can use {@link DisabledMonitorSource} to disabled monitoring.<a name="line.74"></a>
+<span class="sourceLineNo">075</span>         * Defaults to {@link HttpStopwatchSource}.<a name="line.75"></a>
+<span class="sourceLineNo">076</span>         */<a name="line.76"></a>
+<span class="sourceLineNo">077</span>        public static final String INIT_PARAM_STOPWATCH_SOURCE_CLASS = "stopwatch-source-class";<a name="line.77"></a>
+<span class="sourceLineNo">078</span><a name="line.78"></a>
+<span class="sourceLineNo">079</span>        /**<a name="line.79"></a>
+<span class="sourceLineNo">080</span>         * Enable/disable caching on Stopwatch resolution.<a name="line.80"></a>
+<span class="sourceLineNo">081</span>         * &lt;em&gt;Warning: as the cache key is the {@link HttpServletRequest#getRequestURI()},<a name="line.81"></a>
+<span class="sourceLineNo">082</span>         * this is incompatible with application passing data in their<a name="line.82"></a>
+<span class="sourceLineNo">083</span>         * request URI, this is often the case of RESTful services.<a name="line.83"></a>
+<span class="sourceLineNo">084</span>         * For instance "/car/1023/driver" and "/car/3624/driver"<a name="line.84"></a>
+<span class="sourceLineNo">085</span>         * may point to the same page but with different URLs.&lt;/em&gt;<a name="line.85"></a>
+<span class="sourceLineNo">086</span>         * Defaults to {@code false}.<a name="line.86"></a>
+<span class="sourceLineNo">087</span>         */<a name="line.87"></a>
+<span class="sourceLineNo">088</span>        public static final String INIT_PARAM_STOPWATCH_SOURCE_CACHE = "stopwatch-source-cache";<a name="line.88"></a>
+<span class="sourceLineNo">089</span><a name="line.89"></a>
+<span class="sourceLineNo">090</span>        /**<a name="line.90"></a>
+<span class="sourceLineNo">091</span>         * FQN of the {@link org.javasimon.javaee.reqreporter.RequestReporter} implementation that is used to report requests<a name="line.91"></a>
+<span class="sourceLineNo">092</span>         * that {@link #shouldBeReported(javax.servlet.http.HttpServletRequest, long, java.util.List)}.<a name="line.92"></a>
+<span class="sourceLineNo">093</span>         * Default is {@link org.javasimon.javaee.reqreporter.DefaultRequestReporter}.<a name="line.93"></a>
+<span class="sourceLineNo">094</span>         */<a name="line.94"></a>
+<span class="sourceLineNo">095</span>        public static final String INIT_PARAM_REQUEST_REPORTER_CLASS = "request-reporter-class";<a name="line.95"></a>
+<span class="sourceLineNo">096</span><a name="line.96"></a>
+<span class="sourceLineNo">097</span>        /**<a name="line.97"></a>
+<span class="sourceLineNo">098</span>         * Properties for a StopwatchSource class. Has the following format: prop1=val1;prop2=val2<a name="line.98"></a>
+<span class="sourceLineNo">099</span>         * Properties are assumed to be correct Java bean properties and should exist in a class specified by<a name="line.99"></a>
+<span class="sourceLineNo">100</span>         * {@link org.javasimon.javaee.SimonServletFilter#INIT_PARAM_STOPWATCH_SOURCE_CLASS}<a name="line.100"></a>
+<span class="sourceLineNo">101</span>         */<a name="line.101"></a>
+<span class="sourceLineNo">102</span>        public static final String INIT_PARAM_STOPWATCH_SOURCE_PROPS = "stopwatch-source-props";<a name="line.102"></a>
+<span class="sourceLineNo">103</span><a name="line.103"></a>
+<span class="sourceLineNo">104</span>        private static Replacer FINAL_SLASH_REMOVE = new Replacer("/*$", "");<a name="line.104"></a>
+<span class="sourceLineNo">105</span><a name="line.105"></a>
+<span class="sourceLineNo">106</span>        private static Replacer SLASH_TRIM = new Replacer("^/*(.*?)/*$", "$1");<a name="line.106"></a>
+<span class="sourceLineNo">107</span><a name="line.107"></a>
+<span class="sourceLineNo">108</span>        /**<a name="line.108"></a>
+<span class="sourceLineNo">109</span>         * Threshold in ns - any request longer than this will be reported by current {@link #requestReporter} instance.<a name="line.109"></a>
+<span class="sourceLineNo">110</span>         * Specified by {@link #INIT_PARAM_REPORT_THRESHOLD_MS} ({@value #INIT_PARAM_REPORT_THRESHOLD_MS}) in the {@code web.xml} (in ms,<a name="line.110"></a>
+<span class="sourceLineNo">111</span>         * converted to ns during servlet init). This is the default value returned by {@link #getThreshold(javax.servlet.http.HttpServletRequest)}<a name="line.111"></a>
+<span class="sourceLineNo">112</span>         * but it may be completely ignored if method is overridden so. However if the field is {@code null} threshold reporting feature<a name="line.112"></a>
+<span class="sourceLineNo">113</span>         * is disabled.<a name="line.113"></a>
+<span class="sourceLineNo">114</span>         */<a name="line.114"></a>
+<span class="sourceLineNo">115</span>        protected Long reportThresholdNanos;<a name="line.115"></a>
+<span class="sourceLineNo">116</span><a name="line.116"></a>
+<span class="sourceLineNo">117</span>        /**<a name="line.117"></a>
+<span class="sourceLineNo">118</span>         * URL path that displays Simon tree - it is console-path without the ending slash.<a name="line.118"></a>
+<span class="sourceLineNo">119</span>         */<a name="line.119"></a>
+<span class="sourceLineNo">120</span>        protected String printTreePath;<a name="line.120"></a>
+<span class="sourceLineNo">121</span><a name="line.121"></a>
+<span class="sourceLineNo">122</span>        /**<a name="line.122"></a>
+<span class="sourceLineNo">123</span>         * URL path that displays Simon web console (or null if no console is required).<a name="line.123"></a>
+<span class="sourceLineNo">124</span>         */<a name="line.124"></a>
+<span class="sourceLineNo">125</span>        protected String consolePath;<a name="line.125"></a>
+<span class="sourceLineNo">126</span><a name="line.126"></a>
+<span class="sourceLineNo">127</span>        /**<a name="line.127"></a>
+<span class="sourceLineNo">128</span>         * Simon Manager used by the filter.<a name="line.128"></a>
+<span class="sourceLineNo">129</span>         */<a name="line.129"></a>
+<span class="sourceLineNo">130</span>        private Manager manager = SimonManager.manager();<a name="line.130"></a>
+<span class="sourceLineNo">131</span><a name="line.131"></a>
+<span class="sourceLineNo">132</span>        /**<a name="line.132"></a>
+<span class="sourceLineNo">133</span>         * Thread local list of splits used to cumulate all splits for the request.<a name="line.133"></a>
+<span class="sourceLineNo">134</span>         * Every instance of the Servlet has its own thread-local to bind its lifecycle to<a name="line.134"></a>
+<span class="sourceLineNo">135</span>         * the callback that servlet is registering. Then even more callbacks registered from various<a name="line.135"></a>
+<span class="sourceLineNo">136</span>         * servlets in the same manager do not interfere.<a name="line.136"></a>
+<span class="sourceLineNo">137</span>         */<a name="line.137"></a>
+<span class="sourceLineNo">138</span>        private final ThreadLocal&lt;List&lt;Split&gt;&gt; splitsThreadLocal = new ThreadLocal&lt;&gt;();<a name="line.138"></a>
+<span class="sourceLineNo">139</span><a name="line.139"></a>
+<span class="sourceLineNo">140</span>        /**<a name="line.140"></a>
+<span class="sourceLineNo">141</span>         * Callback that saves all splits in {@link #splitsThreadLocal} if {@link #reportThresholdNanos} is configured.<a name="line.141"></a>
+<span class="sourceLineNo">142</span>         */<a name="line.142"></a>
+<span class="sourceLineNo">143</span>        private SplitSaverCallback splitSaverCallback;<a name="line.143"></a>
+<span class="sourceLineNo">144</span><a name="line.144"></a>
+<span class="sourceLineNo">145</span>        /**<a name="line.145"></a>
+<span class="sourceLineNo">146</span>         * Stopwatch source is used before/after each request to start/stop a stopwatch.<a name="line.146"></a>
+<span class="sourceLineNo">147</span>         */<a name="line.147"></a>
+<span class="sourceLineNo">148</span>        private StopwatchSource&lt;HttpServletRequest&gt; stopwatchSource;<a name="line.148"></a>
+<span class="sourceLineNo">149</span><a name="line.149"></a>
+<span class="sourceLineNo">150</span>        /**<a name="line.150"></a>
+<span class="sourceLineNo">151</span>         * Object responsible for reporting the request over threshold (if {@link #shouldBeReported(javax.servlet.http.HttpServletRequest, long, java.util.List)}<a name="line.151"></a>
+<span class="sourceLineNo">152</span>         * returns true).<a name="line.152"></a>
+<span class="sourceLineNo">153</span>         */<a name="line.153"></a>
+<span class="sourceLineNo">154</span>        private RequestReporter requestReporter;<a name="line.154"></a>
+<span class="sourceLineNo">155</span><a name="line.155"></a>
+<span class="sourceLineNo">156</span>        /**<a name="line.156"></a>
+<span class="sourceLineNo">157</span>         * Initialization method that processes various init parameters from {@code web.xml} and sets manager, if<a name="line.157"></a>
+<span class="sourceLineNo">158</span>         * {@link org.javasimon.utils.SimonUtils#MANAGER_SERVLET_CTX_ATTRIBUTE} servlet context attribute is not {@code null}.<a name="line.158"></a>
+<span class="sourceLineNo">159</span>         *<a name="line.159"></a>
+<span class="sourceLineNo">160</span>         * @param filterConfig filter config object<a name="line.160"></a>
+<span class="sourceLineNo">161</span>         */<a name="line.161"></a>
+<span class="sourceLineNo">162</span>        public final void init(FilterConfig filterConfig) {<a name="line.162"></a>
+<span class="sourceLineNo">163</span>                pickUpSharedManagerIfExists(filterConfig);<a name="line.163"></a>
+<span class="sourceLineNo">164</span>                stopwatchSource = SimonServletFilterUtils.initStopwatchSource(filterConfig, manager);<a name="line.164"></a>
+<span class="sourceLineNo">165</span>                setStopwatchSourceProperties(filterConfig, stopwatchSource);<a name="line.165"></a>
+<span class="sourceLineNo">166</span><a name="line.166"></a>
+<span class="sourceLineNo">167</span>                requestReporter = SimonServletFilterUtils.initRequestReporter(filterConfig);<a name="line.167"></a>
+<span class="sourceLineNo">168</span>                requestReporter.setSimonServletFilter(this);<a name="line.168"></a>
+<span class="sourceLineNo">169</span><a name="line.169"></a>
+<span class="sourceLineNo">170</span>                String reportThreshold = filterConfig.getInitParameter(INIT_PARAM_REPORT_THRESHOLD_MS);<a name="line.170"></a>
+<span class="sourceLineNo">171</span>                if (reportThreshold != null) {<a name="line.171"></a>
+<span class="sourceLineNo">172</span>                        try {<a name="line.172"></a>
+<span class="sourceLineNo">173</span>                                this.reportThresholdNanos = Long.parseLong(reportThreshold) * SimonClock.NANOS_IN_MILLIS;<a name="line.173"></a>
+<span class="sourceLineNo">174</span>                                splitSaverCallback = new SplitSaverCallback();<a name="line.174"></a>
+<span class="sourceLineNo">175</span>                                manager.callback().addCallback(splitSaverCallback);<a name="line.175"></a>
+<span class="sourceLineNo">176</span>                        } catch (NumberFormatException e) {<a name="line.176"></a>
+<span class="sourceLineNo">177</span>                                // ignore<a name="line.177"></a>
+<span class="sourceLineNo">178</span>                        }<a name="line.178"></a>
+<span class="sourceLineNo">179</span>                }<a name="line.179"></a>
+<span class="sourceLineNo">180</span><a name="line.180"></a>
+<span class="sourceLineNo">181</span>                String consolePath = filterConfig.getInitParameter(INIT_PARAM_SIMON_CONSOLE_PATH);<a name="line.181"></a>
+<span class="sourceLineNo">182</span>                if (consolePath != null) {<a name="line.182"></a>
+<span class="sourceLineNo">183</span>                        this.printTreePath = FINAL_SLASH_REMOVE.process(consolePath);<a name="line.183"></a>
+<span class="sourceLineNo">184</span>                        this.consolePath = printTreePath + "/";<a name="line.184"></a>
+<span class="sourceLineNo">185</span>                }<a name="line.185"></a>
+<span class="sourceLineNo">186</span>        }<a name="line.186"></a>
+<span class="sourceLineNo">187</span><a name="line.187"></a>
+<span class="sourceLineNo">188</span>        private void setStopwatchSourceProperties(FilterConfig filterConfig, StopwatchSource&lt;HttpServletRequest&gt; stopwatchSource) {<a name="line.188"></a>
+<span class="sourceLineNo">189</span>                String properties = filterConfig.getInitParameter(INIT_PARAM_STOPWATCH_SOURCE_PROPS);<a name="line.189"></a>
+<span class="sourceLineNo">190</span>                if (properties == null) {<a name="line.190"></a>
+<span class="sourceLineNo">191</span>                        return;<a name="line.191"></a>
+<span class="sourceLineNo">192</span>                }<a name="line.192"></a>
+<span class="sourceLineNo">193</span><a name="line.193"></a>
+<span class="sourceLineNo">194</span>                registerEnumConverter();<a name="line.194"></a>
+<span class="sourceLineNo">195</span>                for (String keyValStr : properties.split(";")) {<a name="line.195"></a>
+<span class="sourceLineNo">196</span>                        String[] keyVal = keyValStr.split("=");<a name="line.196"></a>
+<span class="sourceLineNo">197</span>                        String key = keyVal[0];<a name="line.197"></a>
+<span class="sourceLineNo">198</span>                        String val = keyVal[1];<a name="line.198"></a>
+<span class="sourceLineNo">199</span><a name="line.199"></a>
+<span class="sourceLineNo">200</span>                        SimonBeanUtils.getInstance().setProperty(stopwatchSource, key, val);<a name="line.200"></a>
+<span class="sourceLineNo">201</span>                }<a name="line.201"></a>
+<span class="sourceLineNo">202</span>        }<a name="line.202"></a>
+<span class="sourceLineNo">203</span><a name="line.203"></a>
+<span class="sourceLineNo">204</span>        private void registerEnumConverter() {<a name="line.204"></a>
+<span class="sourceLineNo">205</span>                SimonBeanUtils.getInstance().registerConverter(HttpStopwatchSource.IncludeHttpMethodName.class, new ToEnumConverter());<a name="line.205"></a>
+<span class="sourceLineNo">206</span>        }<a name="line.206"></a>
+<span class="sourceLineNo">207</span><a name="line.207"></a>
+<span class="sourceLineNo">208</span>        private void pickUpSharedManagerIfExists(FilterConfig filterConfig) {<a name="line.208"></a>
+<span class="sourceLineNo">209</span>                Object managerObject = filterConfig.getServletContext().getAttribute(SimonUtils.MANAGER_SERVLET_CTX_ATTRIBUTE);<a name="line.209"></a>
+<span class="sourceLineNo">210</span>                if (managerObject != null &amp;&amp; managerObject instanceof Manager) {<a name="line.210"></a>
+<span class="sourceLineNo">211</span>                        manager = (Manager) managerObject;<a name="line.211"></a>
+<span class="sourceLineNo">212</span>                }<a name="line.212"></a>
+<span class="sourceLineNo">213</span>        }<a name="line.213"></a>
+<span class="sourceLineNo">214</span><a name="line.214"></a>
+<span class="sourceLineNo">215</span>        /**<a name="line.215"></a>
+<span class="sourceLineNo">216</span>         * Wraps the HTTP request with Simon measuring. Separate Simons are created for different URIs (parameters<a name="line.216"></a>
+<span class="sourceLineNo">217</span>         * ignored).<a name="line.217"></a>
+<span class="sourceLineNo">218</span>         *<a name="line.218"></a>
+<span class="sourceLineNo">219</span>         * @param servletRequest HTTP servlet request<a name="line.219"></a>
+<span class="sourceLineNo">220</span>         * @param servletResponse HTTP servlet response<a name="line.220"></a>
+<span class="sourceLineNo">221</span>         * @param filterChain filter chain<a name="line.221"></a>
+<span class="sourceLineNo">222</span>         * @throws IOException possibly thrown by other filter/servlet in the chain<a name="line.222"></a>
+<span class="sourceLineNo">223</span>         * @throws ServletException possibly thrown by other filter/servlet in the chain<a name="line.223"></a>
+<span class="sourceLineNo">224</span>         */<a name="line.224"></a>
+<span class="sourceLineNo">225</span>        public final void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {<a name="line.225"></a>
+<span class="sourceLineNo">226</span>                HttpServletRequest request = (HttpServletRequest) servletRequest;<a name="line.226"></a>
+<span class="sourceLineNo">227</span>                HttpServletResponse response = (HttpServletResponse) servletResponse;<a name="line.227"></a>
+<span class="sourceLineNo">228</span><a name="line.228"></a>
+<span class="sourceLineNo">229</span>                String localPath = request.getRequestURI().substring(request.getContextPath().length());<a name="line.229"></a>
+<span class="sourceLineNo">230</span>                if (consolePath != null &amp;&amp; (localPath.equals(printTreePath) || localPath.startsWith(consolePath))) {<a name="line.230"></a>
+<span class="sourceLineNo">231</span>                        consolePage(request, response, localPath);<a name="line.231"></a>
+<span class="sourceLineNo">232</span>                        return;<a name="line.232"></a>
+<span class="sourceLineNo">233</span>                }<a name="line.233"></a>
+<span class="sourceLineNo">234</span><a name="line.234"></a>
+<span class="sourceLineNo">235</span>                doFilterWithMonitoring(filterChain, request, response);<a name="line.235"></a>
+<span class="sourceLineNo">236</span>        }<a name="line.236"></a>
+<span class="sourceLineNo">237</span><a name="line.237"></a>
+<span class="sourceLineNo">238</span>        private void doFilterWithMonitoring(FilterChain filterChain, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {<a name="line.238"></a>
+<span class="sourceLineNo">239</span>                Split split = stopwatchSource.start(request);<a name="line.239"></a>
+<span class="sourceLineNo">240</span>                if (split.isEnabled() &amp;&amp; reportThresholdNanos != null) {<a name="line.240"></a>
+<span class="sourceLineNo">241</span>                        splitsThreadLocal.set(new ArrayList&lt;Split&gt;());<a name="line.241"></a>
+<span class="sourceLineNo">242</span>                }<a name="line.242"></a>
+<span class="sourceLineNo">243</span><a name="line.243"></a>
+<span class="sourceLineNo">244</span>                try {<a name="line.244"></a>
+<span class="sourceLineNo">245</span>                        filterChain.doFilter(request, response);<a name="line.245"></a>
+<span class="sourceLineNo">246</span>                        // TODO: is it sensible to catch exceptions here and stop split with tags?<a name="line.246"></a>
+<span class="sourceLineNo">247</span>                        // for instance Wicket does not let the exception go to here anyway<a name="line.247"></a>
+<span class="sourceLineNo">248</span>                } finally {<a name="line.248"></a>
+<span class="sourceLineNo">249</span>                        stopSplitForRequest(request, split);<a name="line.249"></a>
+<span class="sourceLineNo">250</span>                }<a name="line.250"></a>
+<span class="sourceLineNo">251</span>        }<a name="line.251"></a>
+<span class="sourceLineNo">252</span><a name="line.252"></a>
+<span class="sourceLineNo">253</span>        private void stopSplitForRequest(HttpServletRequest request, Split split) {<a name="line.253"></a>
+<span class="sourceLineNo">254</span>                if (split.isEnabled()) {<a name="line.254"></a>
+<span class="sourceLineNo">255</span>                        split.stop();<a name="line.255"></a>
+<span class="sourceLineNo">256</span>                        long splitNanoTime = split.runningFor();<a name="line.256"></a>
+<span class="sourceLineNo">257</span>                        if (reportThresholdNanos != null) {<a name="line.257"></a>
+<span class="sourceLineNo">258</span>                                List&lt;Split&gt; splits = splitsThreadLocal.get();<a name="line.258"></a>
+<span class="sourceLineNo">259</span>                                splitsThreadLocal.remove(); // better do this before we call potentially overridden method<a name="line.259"></a>
+<span class="sourceLineNo">260</span>                                if (shouldBeReported(request, splitNanoTime, splits)) {<a name="line.260"></a>
+<span class="sourceLineNo">261</span>                                        requestReporter.reportRequest(request, split, splits);<a name="line.261"></a>
+<span class="sourceLineNo">262</span>                                }<a name="line.262"></a>
+<span class="sourceLineNo">263</span>                        }<a name="line.263"></a>
+<span class="sourceLineNo">264</span>                }<a name="line.264"></a>
+<span class="sourceLineNo">265</span>        }<a name="line.265"></a>
+<span class="sourceLineNo">266</span><a name="line.266"></a>
+<span class="sourceLineNo">267</span>        /**<a name="line.267"></a>
+<span class="sourceLineNo">268</span>         * Determines whether the request is over the threshold - with all incoming parameters this method can be<a name="line.268"></a>
+<span class="sourceLineNo">269</span>         * very flexible. Default implementation just compares the actual requestNanoTime with<a name="line.269"></a>
+<span class="sourceLineNo">270</span>         * {@link #getThreshold(javax.servlet.http.HttpServletRequest)} (which by default returns value configured<a name="line.270"></a>
+<span class="sourceLineNo">271</span>         * in {@code web.xml})<a name="line.271"></a>
+<span class="sourceLineNo">272</span>         *<a name="line.272"></a>
+<span class="sourceLineNo">273</span>         * @param request HTTP servlet request<a name="line.273"></a>
+<span class="sourceLineNo">274</span>         * @param requestNanoTime actual HTTP request nano time<a name="line.274"></a>
+<span class="sourceLineNo">275</span>         * @param splits all splits started for the request<a name="line.275"></a>
+<span class="sourceLineNo">276</span>         * @return {@code true}, if request should be reported as over threshold<a name="line.276"></a>
+<span class="sourceLineNo">277</span>         */<a name="line.277"></a>
+<span class="sourceLineNo">278</span>        protected boolean shouldBeReported(HttpServletRequest request, long requestNanoTime, List&lt;Split&gt; splits) {<a name="line.278"></a>
+<span class="sourceLineNo">279</span>                return requestNanoTime &gt; getThreshold(request);<a name="line.279"></a>
+<span class="sourceLineNo">280</span>        }<a name="line.280"></a>
+<span class="sourceLineNo">281</span><a name="line.281"></a>
+<span class="sourceLineNo">282</span>        /**<a name="line.282"></a>
+<span class="sourceLineNo">283</span>         * Returns actual threshold in *nanoseconds* (not ms as configured) which allows to further customize threshold per request - intended for override.<a name="line.283"></a>
+<span class="sourceLineNo">284</span>         * Default behavior returns configured {@link #reportThresholdNanos} (already converted to ns).<a name="line.284"></a>
+<span class="sourceLineNo">285</span>         *<a name="line.285"></a>
+<span class="sourceLineNo">286</span>         * @param request HTTP Request<a name="line.286"></a>
+<span class="sourceLineNo">287</span>         * @return threshold in ns for current request<a name="line.287"></a>
+<span class="sourceLineNo">288</span>         * @since 3.2<a name="line.288"></a>
+<span class="sourceLineNo">289</span>         */<a name="line.289"></a>
+<span class="sourceLineNo">290</span>        protected long getThreshold(HttpServletRequest request) {<a name="line.290"></a>
+<span class="sourceLineNo">291</span>                return reportThresholdNanos;<a name="line.291"></a>
+<span class="sourceLineNo">292</span>        }<a name="line.292"></a>
+<span class="sourceLineNo">293</span><a name="line.293"></a>
+<span class="sourceLineNo">294</span>        private void consolePage(HttpServletRequest request, HttpServletResponse response, String localPath) throws IOException {<a name="line.294"></a>
+<span class="sourceLineNo">295</span>                response.setContentType("text/plain");<a name="line.295"></a>
+<span class="sourceLineNo">296</span>                response.setHeader("Cache-Control", "no-cache, no-store, max-age=0, must-revalidate");<a name="line.296"></a>
+<span class="sourceLineNo">297</span>                response.setHeader("Pragma", "no-cache");<a name="line.297"></a>
+<span class="sourceLineNo">298</span><a name="line.298"></a>
+<span class="sourceLineNo">299</span>                if (localPath.equals(printTreePath)) {<a name="line.299"></a>
+<span class="sourceLineNo">300</span>                        printSimonTree(response);<a name="line.300"></a>
+<span class="sourceLineNo">301</span>                        return;<a name="line.301"></a>
+<span class="sourceLineNo">302</span>                }<a name="line.302"></a>
+<span class="sourceLineNo">303</span><a name="line.303"></a>
+<span class="sourceLineNo">304</span>                String subCommand = SLASH_TRIM.process(localPath.substring(consolePath.length()));<a name="line.304"></a>
+<span class="sourceLineNo">305</span>                if (subCommand.isEmpty()) {<a name="line.305"></a>
+<span class="sourceLineNo">306</span>                        printSimonTree(response);<a name="line.306"></a>
+<span class="sourceLineNo">307</span>                } else if (subCommand.equalsIgnoreCase("clearManager")) {<a name="line.307"></a>
+<span class="sourceLineNo">308</span>                        manager.clear();<a name="line.308"></a>
+<span class="sourceLineNo">309</span>                        response.getOutputStream().println("Simon Manager was cleared");<a name="line.309"></a>
+<span class="sourceLineNo">310</span>                } else if (subCommand.equalsIgnoreCase("help")) {<a name="line.310"></a>
+<span class="sourceLineNo">311</span>                        simonHelp(response);<a name="line.311"></a>
+<span class="sourceLineNo">312</span>                } else {<a name="line.312"></a>
+<span class="sourceLineNo">313</span>                        response.getOutputStream().println("Invalid command\n");<a name="line.313"></a>
+<span class="sourceLineNo">314</span>                        simonHelp(response);<a name="line.314"></a>
+<span class="sourceLineNo">315</span>                }<a name="line.315"></a>
+<span class="sourceLineNo">316</span>        }<a name="line.316"></a>
+<span class="sourceLineNo">317</span><a name="line.317"></a>
+<span class="sourceLineNo">318</span>        private void simonHelp(ServletResponse response) throws IOException {<a name="line.318"></a>
+<span class="sourceLineNo">319</span>                response.getOutputStream().println("Simon Console help - available commands:");<a name="line.319"></a>
+<span class="sourceLineNo">320</span>                response.getOutputStream().println("- clearManager - clears the manager (removes all Simons)");<a name="line.320"></a>
+<span class="sourceLineNo">321</span>                response.getOutputStream().println("- help - shows this help");<a name="line.321"></a>
+<span class="sourceLineNo">322</span>        }<a name="line.322"></a>
+<span class="sourceLineNo">323</span><a name="line.323"></a>
+<span class="sourceLineNo">324</span>        private void printSimonTree(ServletResponse response) throws IOException {<a name="line.324"></a>
+<span class="sourceLineNo">325</span>                response.getOutputStream().println(SimonUtils.simonTreeString(manager.getRootSimon()));<a name="line.325"></a>
+<span class="sourceLineNo">326</span>        }<a name="line.326"></a>
+<span class="sourceLineNo">327</span><a name="line.327"></a>
+<span class="sourceLineNo">328</span>        public Manager getManager() {<a name="line.328"></a>
+<span class="sourceLineNo">329</span>                return manager;<a name="line.329"></a>
+<span class="sourceLineNo">330</span>        }<a name="line.330"></a>
+<span class="sourceLineNo">331</span><a name="line.331"></a>
+<span class="sourceLineNo">332</span>        /**<a name="line.332"></a>
+<span class="sourceLineNo">333</span>         * Returns stopwatch source used by the filter.<a name="line.333"></a>
+<span class="sourceLineNo">334</span>         *<a name="line.334"></a>
+<span class="sourceLineNo">335</span>         * @return stopwatch source<a name="line.335"></a>
+<span class="sourceLineNo">336</span>         */<a name="line.336"></a>
+<span class="sourceLineNo">337</span>        StopwatchSource&lt;HttpServletRequest&gt; getStopwatchSource() {<a name="line.337"></a>
+<span class="sourceLineNo">338</span>                return stopwatchSource;<a name="line.338"></a>
+<span class="sourceLineNo">339</span>        }<a name="line.339"></a>
+<span class="sourceLineNo">340</span><a name="line.340"></a>
+<span class="sourceLineNo">341</span>        /**<a name="line.341"></a>
+<span class="sourceLineNo">342</span>         * Removes the splitSaverCallback if initialized.<a name="line.342"></a>
+<span class="sourceLineNo">343</span>         */<a name="line.343"></a>
+<span class="sourceLineNo">344</span>        public void destroy() {<a name="line.344"></a>
+<span class="sourceLineNo">345</span>                if (splitSaverCallback != null) {<a name="line.345"></a>
+<span class="sourceLineNo">346</span>                        manager.callback().removeCallback(splitSaverCallback);<a name="line.346"></a>
+<span class="sourceLineNo">347</span>                }<a name="line.347"></a>
+<span class="sourceLineNo">348</span>        }<a name="line.348"></a>
+<span class="sourceLineNo">349</span><a name="line.349"></a>
+<span class="sourceLineNo">350</span>        private class SplitSaverCallback extends CallbackSkeleton {<a name="line.350"></a>
+<span class="sourceLineNo">351</span>                @Override<a name="line.351"></a>
+<span class="sourceLineNo">352</span>                public void onStopwatchStart(Split split) {<a name="line.352"></a>
+<span class="sourceLineNo">353</span>                        List&lt;Split&gt; splits = splitsThreadLocal.get();<a name="line.353"></a>
+<span class="sourceLineNo">354</span>                        if (splits != null) {<a name="line.354"></a>
+<span class="sourceLineNo">355</span>                                splits.add(split);<a name="line.355"></a>
+<span class="sourceLineNo">356</span>                        }<a name="line.356"></a>
+<span class="sourceLineNo">357</span>                }<a name="line.357"></a>
+<span class="sourceLineNo">358</span>        }<a name="line.358"></a>
+<span class="sourceLineNo">359</span>}<a name="line.359"></a>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</pre>
+</div>
+</body>
+</html>
