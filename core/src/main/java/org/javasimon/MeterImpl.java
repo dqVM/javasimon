@@ -9,6 +9,9 @@ public class MeterImpl extends AbstractSimon implements Meter {
 	private long counter; 
 	private long incrementSum;
 	
+	private static final long TICK_INTERVAL = TimeUnit.SECONDS.toNanos(5);
+	
+	
 
 	MeterImpl(String name, Manager manager) {
 		super(name, manager);
