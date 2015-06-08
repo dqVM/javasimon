@@ -3,6 +3,8 @@ package org.javasimon.callback;
 import org.javasimon.Counter;
 import org.javasimon.CounterSample;
 import org.javasimon.Manager;
+import org.javasimon.Meter;
+import org.javasimon.MeterSample;
 import org.javasimon.Simon;
 import org.javasimon.SimonPattern;
 import org.javasimon.Split;
@@ -211,5 +213,13 @@ public final class CompositeFilterCallback implements FilterCallback, CompositeC
 			return false;
 		}
 		return rule.checkCondition(simon, params);
+	}
+
+	@Override
+	public void onMeterIncrease(Meter meter, long inc, MeterSample sample) {
+		if (rulesApplyTo(meter, Event.COUNTER_INCREASE, inc)) {
+			callback.onMeterIncrease(meter, inc, sample);
+		}
+		
 	}
 }

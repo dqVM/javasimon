@@ -3,6 +3,8 @@ package org.javasimon.callback;
 import org.javasimon.Counter;
 import org.javasimon.CounterSample;
 import org.javasimon.Manager;
+import org.javasimon.Meter;
+import org.javasimon.MeterSample;
 import org.javasimon.Simon;
 import org.javasimon.Split;
 import org.javasimon.Stopwatch;
@@ -42,6 +44,9 @@ public class CallbackSkeleton implements Callback {
 	@Override
 	public void onCounterIncrease(Counter counter, long inc, CounterSample sample) {
 	}
+	
+	
+
 
 	@Override
 	public void onCounterSet(Counter counter, long val, CounterSample sample) {
@@ -65,5 +70,9 @@ public class CallbackSkeleton implements Callback {
 
 	@Override
 	public void onManagerWarning(String warning, Exception cause) {
+	}
+
+	@Override
+	public void onMeterIncrease(Meter counter, long inc, MeterSample sample) {
 	}
 }

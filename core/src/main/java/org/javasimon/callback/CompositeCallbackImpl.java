@@ -3,6 +3,8 @@ package org.javasimon.callback;
 import org.javasimon.Counter;
 import org.javasimon.CounterSample;
 import org.javasimon.Manager;
+import org.javasimon.Meter;
+import org.javasimon.MeterSample;
 import org.javasimon.Simon;
 import org.javasimon.Split;
 import org.javasimon.Stopwatch;
@@ -171,5 +173,14 @@ public final class CompositeCallbackImpl implements CompositeCallback {
 		for (Callback callback : callbacks) {
 			callback.onManagerWarning(warning, cause);
 		}
+	}
+
+	@Override
+	public void onMeterIncrease(Meter meter, long inc, MeterSample sample) {
+		// TODO Auto-generated method stub
+		for (Callback callback : callbacks) {
+			callback.onMeterIncrease(meter, inc, sample);
+		}
+		
 	}
 }

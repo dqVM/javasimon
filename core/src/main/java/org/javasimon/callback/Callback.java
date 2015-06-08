@@ -3,6 +3,8 @@ package org.javasimon.callback;
 import org.javasimon.Counter;
 import org.javasimon.CounterSample;
 import org.javasimon.Manager;
+import org.javasimon.Meter;
+import org.javasimon.MeterSample;
 import org.javasimon.Simon;
 import org.javasimon.Split;
 import org.javasimon.Stopwatch;
@@ -95,6 +97,17 @@ public interface Callback {
 	 * @param sample counter sampled after the operation
 	 */
 	void onCounterIncrease(Counter counter, long inc, CounterSample sample);
+	
+	
+	
+	/**
+	 * Meter increase event
+	 * 
+	 */
+	void onMeterIncrease(Meter counter, long inc, MeterSample sample);
+	
+	
+	
 
 	/**
 	 * Counter set event. {@link CounterSample} valid for the moment after the operation is provided
