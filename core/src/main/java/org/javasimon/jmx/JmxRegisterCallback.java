@@ -2,6 +2,7 @@ package org.javasimon.jmx;
 
 import org.javasimon.Counter;
 import org.javasimon.Manager;
+import org.javasimon.Meter;
 import org.javasimon.Simon;
 import org.javasimon.Stopwatch;
 import org.javasimon.callback.CallbackSkeleton;
@@ -83,6 +84,7 @@ public class JmxRegisterCallback extends CallbackSkeleton {
 		if (simon.getName() == null) {
 			return;
 		}
+		System.out.println("simon create"+simon.getName()+"\n");
 		register(simon);
 	}
 
@@ -178,9 +180,19 @@ public class JmxRegisterCallback extends CallbackSkeleton {
 			simonMxBean = new CounterMXBeanImpl((Counter) simon);
 		} else if (simon instanceof Stopwatch) {
 			simonMxBean = new StopwatchMXBeanImpl((Stopwatch) simon);
-		} else {
+		} 
+		else{
+			
+			if(simon instanceof Meter){
+				onManagerWarning("Meter of Simon! " + simon, null);
+				simonMxBean=null;
+			}else{
+			
+			
+			//System.out.printf("unkown type \n");
 			onManagerWarning("Unknown type of Simon! " + simon, null);
 			simonMxBean = null;
+			}
 		}
 		return simonMxBean;
 	}

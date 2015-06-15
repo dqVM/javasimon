@@ -67,6 +67,16 @@ public final class DisabledManager implements Manager {
 	}
 
 	/**
+	 * Return  "Null Meter" future work 
+	 */
+	@Override
+	public Meter getMeter(String name) {
+		return null;
+	}
+	
+	
+	
+	/**
 	 * Returns "Null Simon" that always returns empty/null values and cannot measure anything.
 	 * Null Simon returned by this method is neither {@link Stopwatch} nor {@link Counter}.
 	 *
@@ -142,4 +152,6 @@ public final class DisabledManager implements Manager {
 	public long millisForNano(long nanos) {
 		return 0;
 	}
+
+	
 }

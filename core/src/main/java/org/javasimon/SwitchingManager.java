@@ -32,10 +32,15 @@ public final class SwitchingManager implements Manager {
 	public Counter getCounter(String name) {
 		return manager.getCounter(name);
 	}
-
 	@Override
 	public Stopwatch getStopwatch(String name) {
 		return manager.getStopwatch(name);
+	}
+	
+	
+	@Override
+	public Meter getMeter(String name) {
+		return manager.getMeter(name);
 	}
 
 	@Override
@@ -123,4 +128,6 @@ public final class SwitchingManager implements Manager {
 			((EnabledManager) currentManager).purgeIncrementalSimonsOlderThan(thresholdMs);
 		}
 	}
+
+	
 }

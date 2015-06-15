@@ -74,6 +74,7 @@ public class SimonManagerMXBeanImpl implements SimonManagerMXBean {
 		SimonInfo[] simonInfo = new SimonInfo[simonNames.length];
 		int i = 0;
 		for (String name : simonNames) {
+			//System.out.println(name);
 			Simon s = manager.getSimon(name);
 			simonInfo[i++] = new SimonInfo(name, s instanceof Stopwatch ? SimonInfo.STOPWATCH :
 				s instanceof Counter ? SimonInfo.COUNTER : SimonInfo.UNKNOWN);

@@ -48,8 +48,7 @@ public class MeterImpl extends AbstractSimon implements Meter {
 		if(!enabled){
 			return this;
 		}
-		/*
-		 * incremental simon update*/
+		
 		long now = manager.milliTime();
 		MeterSample sample;
 		synchronized (this) {
@@ -78,8 +77,8 @@ public class MeterImpl extends AbstractSimon implements Meter {
 		counter += inc;
 		tickIfNecessary();
 		m1Rate.update(inc);
-		m5Rate.update(inc);
-		m15Rate.update(inc);
+		//m5Rate.update(inc);
+		//m15Rate.update(inc);
 	}
 	
 	
@@ -105,17 +104,18 @@ public class MeterImpl extends AbstractSimon implements Meter {
 
 	private void tickIfNecessary() {
 		// TODO Auto-generated method stub
-		 final long oldTick = startTime;
+		 final long oldTick = lastTick.get();
 	     final long newTick = manager.nanoTime();
 	     final long age = newTick - oldTick;
-	        if (age > TICK_INTERVAL) {
+	      if (age > TICK_INTERVAL) {
+	        	
 	            final long newIntervalStartTick = newTick - age % TICK_INTERVAL;
 	            if (lastTick.compareAndSet(oldTick, newIntervalStartTick)) {
 	                final long requiredTicks = age / TICK_INTERVAL;
 	                for (long i = 0; i < requiredTicks; i++) {
 	                    m1Rate.tick();
-	                    m5Rate.tick();
-	                    m15Rate.tick();
+	                   // m5Rate.tick();
+	                    //m15Rate.tick();
 	                }
 	            }
 	        }
@@ -130,8 +130,9 @@ public class MeterImpl extends AbstractSimon implements Meter {
 		if(counter==0){
 			return 0.0;
 		}else{
-			final double elapsed=manager.milliTime()-startTime;
-			return getCount() / elapsed * TimeUnit.MILLISECONDS.toNanos(1);
+			final double elapsed=manager.nanoTime()-startTime;
+			
+			return getCount() / elapsed * TimeUnit.SECONDS.toNanos(1);
 		}
 	}
 
@@ -202,10 +203,13 @@ public class MeterImpl extends AbstractSimon implements Meter {
 	public synchronized String toString() {
 		/*re-define */
 		return "Simon Meter: current Count=" + getCount()+
-			", meanRate=" + getMeanRate() +
-			", min=" + getOneMinuteRate()+
+			", meanRate=" + getMeanRate() +"events/seconds"+
+			", OneMinuteRate=" + getOneMinuteRate()+"events/seconds"+
 			super.toString();
 	}
+
+
+	
 	
 
 }

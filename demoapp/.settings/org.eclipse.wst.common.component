@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?><project-modules id="moduleCoreId" project-version="1.5.0">
+    <wb-module deploy-name="javasimon-demoapp">
+        <wb-resource deploy-path="/" source-path="/target/m2e-wtp/web-resources"/>
+        <wb-resource deploy-path="/" source-path="/src/main/webapp" tag="defaultRootSource"/>
+        <wb-resource deploy-path="/WEB-INF/classes" source-path="/src/main/java"/>
+        <wb-resource deploy-path="/WEB-INF/classes" source-path="/src/main/resources"/>
+        <dependent-module archiveName="javasimon-javaee-4.1.1-SNAPSHOT.jar" deploy-path="/WEB-INF/lib" handle="module:/resource/javasimon-javaee/javasimon-javaee">
+            <dependency-type>uses</dependency-type>
+        </dependent-module>
+        <dependent-module archiveName="javasimon-core-4.1.1-SNAPSHOT.jar" deploy-path="/WEB-INF/lib" handle="module:/resource/javasimon-core/javasimon-core">
+            <dependency-type>uses</dependency-type>
+        </dependent-module>
+        <dependent-module archiveName="javasimon-console-embed-4.1.1-SNAPSHOT.jar" deploy-path="/WEB-INF/lib" handle="module:/resource/javasimon-console-embed/javasimon-console-embed">
+            <dependency-type>uses</dependency-type>
+        </dependent-module>
+        <property name="context-root" value="javasimon-demoapp"/>
+        <property name="java-output-path" value="/javasimon-demoapp/target/classes"/>
+    </wb-module>
+</project-modules>

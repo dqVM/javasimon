@@ -206,6 +206,8 @@ public final class JmxReporter {
 	public JmxReporter start() {
 		SimonManagerMXBean simonManagerMXBean = new SimonManagerMXBeanImpl(manager);
 		registerMXBean(simonManagerMXBean, beanName);
+		
+		
 
 		if (registerSimons) {
 			jmxRegisterCallback = new JmxRegisterCallback(beanServer, simonDomain);

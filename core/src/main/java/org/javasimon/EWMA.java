@@ -77,6 +77,7 @@ public class EWMA {
      * @param n the new value
      */
     public void update(long n) {
+    	//System.out.printf("uncounted upate %d \n", n);
         uncounted.add(n);
     }
 
@@ -84,12 +85,15 @@ public class EWMA {
      * Mark the passage of time and decay the current rate accordingly.
      */
     public void tick() {
+    	//System.out.printf("tick\n");
         final long count = uncounted.sumThenReset();
         final double instantRate = count / interval;
+        
         if (initialized) {
             rate += (alpha * (instantRate - rate));
         } else {
             rate = instantRate;
+            //System.out.printf("rate:%.10f \n", rate);
             initialized = true;
         }
     }

@@ -46,6 +46,7 @@ public final class SimonManager {
 	 * itself, only the configuration is reloaded. Method also preserves Callback setup.
 	 */
 	static void init() {
+		
 		Callback temporaryDebugCallback = new SystemDebugCallback();
 		manager.callback().addCallback(temporaryDebugCallback); // just for reporting warnings, will be removed
 		try {
@@ -115,6 +116,11 @@ public final class SimonManager {
 		return manager.getStopwatch(name);
 	}
 
+	public static Meter getMeter(String name){
+		return manager.getMeter(name);
+	}
+	
+	
 	/** Enables the Simon Manager. Enabled manager provides real Simons. */
 	public static void enable() {
 		manager.enable();

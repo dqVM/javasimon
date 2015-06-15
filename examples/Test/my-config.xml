@@ -1,0 +1,3 @@
+ <simon-configuration>
+ 	<simon pattern="org.javasimon.examples.*" state="disabled"/>
+ </simon-configuration>

@@ -2,6 +2,7 @@ package org.javasimon.examples.jmx;
 
 import java.util.Random;
 
+import org.javasimon.Meter;
 import org.javasimon.SimonManager;
 import org.javasimon.Split;
 import org.javasimon.Stopwatch;
@@ -27,6 +28,11 @@ public class JmxReporterExample {
 		// "testStopwatch" can be accessed through JMX bean for manager and
 		// through separate beans for this particular Simon
 		Stopwatch stopwatch = SimonManager.manager().getStopwatch("testStopwatch");
+		Meter meter=SimonManager.manager().getMeter("testMeter");
+		
+		
+		
+		//
 
 		// Generate some metrics data that can be accessed through JMX
 		Random random = new Random();
@@ -34,6 +40,7 @@ public class JmxReporterExample {
 		// go to jconsole/jvisualvm, find MBean for ExistingStopwatch, go to Operations and call setState(DISABLED,true)
 		while (existingStopwatch.isEnabled()) {
 			try (Split ignored = stopwatch.start()) {
+				meter.mark(1);
 				Thread.sleep(random.nextInt(1000));
 			} catch (InterruptedException e) {
 				e.printStackTrace();

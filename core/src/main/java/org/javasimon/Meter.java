@@ -1,5 +1,7 @@
 package org.javasimon;
 
+//import org.mockito.exceptions.Reporter;
+
 public interface Meter extends Simon {
 	Meter mark();
 	Meter mark(long inc);
@@ -10,6 +12,7 @@ public interface Meter extends Simon {
 	double getFiveMinuteRate();
 	double getMeanRate();
 	double getOneMinuteRate();
+	
 	
 	@Override
 	MeterSample sample();

@@ -26,6 +26,8 @@ public final class CallbackFilteringExample {
 	public static void main(String[] args) {
 		// manager with two stopwatches is created
 		Manager manager = new EnabledManager();
+		
+		//Class c=Class.forName(this);
 		Stopwatch sw1 = manager.getStopwatch("org.javasimon.examples.stopwatch1");
 		Stopwatch sw2 = manager.getStopwatch("other.stopwatch2");
 
@@ -45,7 +47,7 @@ public final class CallbackFilteringExample {
 
 		// prints start/stop for both stopwatches
 		sw1.start().stop();
-		sw2.start().stop();
+		//sw2.start().stop();
 		System.out.println();
 
 		// we need to remove old callback
