@@ -26,7 +26,7 @@ import java.util.Map;
  * <p/>
  * Callback can have a lifecycle supported with methods {@link #initialize(Manager)} and {@link #cleanup()}.
  * Callback is initialized when it is attached to the manager (anywhere in the callback tree) and
- * deinitialized when the callback is removed from the callback tree.
+ * de-initialized when the callback is removed from the callback tree.
  *
  * @author <a href="mailto:virgo47@gmail.com">Richard "Virgo" Richter</a>
  */

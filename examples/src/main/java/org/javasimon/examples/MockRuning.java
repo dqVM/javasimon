@@ -13,7 +13,7 @@ public class MockRuning {
 	public void running() throws InterruptedException{
 		Meter meter=SimonManager.getMeter(SimonUtils.generateName()+"Meter");
 		
-		for(int i=1;i<100;i++){
+		for(int i=1;i<10;i++){
 			Thread.sleep(1000);
 			meter.mark();
 		}

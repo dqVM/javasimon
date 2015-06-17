@@ -2,6 +2,10 @@ package org.javasimon.callback.logging;
 
 import static org.javasimon.callback.logging.LogTemplates.toSLF4J;
 
+//import java.io.ObjectInputStream.GetField;
+
+import org.javasimon.Counter;
+import org.javasimon.CounterSample;
 import org.javasimon.SimonManager;
 import org.javasimon.Split;
 import org.javasimon.Stopwatch;
@@ -22,6 +26,8 @@ public class LoggingCallback extends CallbackSkeleton {
 
 	/** Log template used for Stopwatch splits. */
 	private final LogTemplate<Split> stopwatchLogTemplate;
+	//private final LogTemplate<Counter> couterLogTemplate;
+	private final PeriodicLogTemplate<Counter> couterLogTemplate;
 
 	/** Split to string converter. */
 	private final LogMessageSource<Split> stopwatchLogMessageSource = new LogMessageSource<Split>() {
@@ -30,6 +36,17 @@ public class LoggingCallback extends CallbackSkeleton {
 		}
 	};
 
+	
+	/** Counter to string converter*/
+	private final LogMessageSource<Counter> couterLogMessageSource=new LogMessageSource<Counter>() {
+		
+		@Override
+		public String getLogMessage(Counter counter) {
+			
+			return "Counter "+ counter;
+		}
+	};
+	
 	/** Log template used for manager. */
 	private final LogTemplate<String> managerLogTemplate;
 
@@ -40,6 +57,8 @@ public class LoggingCallback extends CallbackSkeleton {
 		}
 	};
 
+	
+	
 	/**
 	 * Constructor which can be used to customize log templates.
 	 *
@@ -49,12 +68,16 @@ public class LoggingCallback extends CallbackSkeleton {
 	public LoggingCallback(LogTemplate<Split> stopwatchLogTemplate, LogTemplate<String> managerLogTemplate) {
 		this.stopwatchLogTemplate = stopwatchLogTemplate;
 		this.managerLogTemplate = managerLogTemplate;
+		//this.couterLogMessageSource
+		this.couterLogTemplate=new PeriodicLogTemplate(toSLF4J(Counter.class.getName(), "debug"), 3);
 	}
 
 	/** Default constructor logging everything to SLF4J. */
 	public LoggingCallback() {
 		this.stopwatchLogTemplate = toSLF4J(Stopwatch.class.getName(), "debug");
 		this.managerLogTemplate = toSLF4J(SimonManager.class.getName(), "info");
+//		this.couterLogTemplate=toSLF4J(Counter.class.getName(), "debug");
+		this.couterLogTemplate=new PeriodicLogTemplate(toSLF4J(Counter.class.getName(), "debug"), 5);
 	}
 
 	/**
@@ -87,6 +110,12 @@ public class LoggingCallback extends CallbackSkeleton {
 		return stopwatchLogTemplate;
 	}
 
+	@SuppressWarnings("UnusedParameters")
+	protected LogTemplate<Counter> getCounterLogTemplate(Counter counter){
+		return couterLogTemplate;
+	}
+	
+	
 	/**
 	 * {@inheritDoc}
 	 * Split and stopwatch are logger to log template is enabled.
@@ -103,4 +132,14 @@ public class LoggingCallback extends CallbackSkeleton {
 	public void onManagerWarning(String warning, Exception cause) {
 		managerLogTemplate.log(warning, managerLogMessageSource);
 	}
+	
+	/**
+	 * Counter are logger to log template is enable
+	 */
+	@Override
+	public void onCounterIncrease(Counter counter, long inc, CounterSample sample){
+		getCounterLogTemplate(counter).log(counter, couterLogMessageSource);
+	}
+		
+	
 }

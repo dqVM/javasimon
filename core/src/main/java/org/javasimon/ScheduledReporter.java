@@ -15,6 +15,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * scheduleReport: reporting metrics once per period 
+ * user configuratable  
+ * @author xiaod
+ *
+ */
 public class ScheduledReporter implements Closeable, Reporter{
 	
 	 private static final Logger LOG = LoggerFactory.getLogger(ScheduledReporter.class);
