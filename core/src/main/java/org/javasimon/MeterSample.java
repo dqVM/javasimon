@@ -12,11 +12,12 @@ import org.javasimon.utils.SimonUtils;
 
 public class MeterSample  extends Sample {
 
-	 private double fifteenMinuteRate;
-	 private double fiveMinuteRate;
+//	 private double fifteenMinuteRate;
+//	 private double fiveMinuteRate;
 	 private double oneMinuteRate;
 	 private double meanRate;
 	 private double counter;
+	 private double peakRate;
 	
 	 @Override
 		public String toString() {
@@ -28,7 +29,8 @@ public class MeterSample  extends Sample {
 			sb.append("count=").append(counter);
 			sb.append("meanRate=").append(meanRate);
 			sb.append("oneMinuteRate=").append(oneMinuteRate);
-			sb.append("fiveMinuteRate=").append(fifteenMinuteRate);
+			sb.append("peakRate=").append(peakRate);
+			//sb.append("fiveMinuteRate=").append(fifteenMinuteRate);
 			toStringCommon(sb);
 			return sb.toString();
 		}
@@ -37,29 +39,15 @@ public class MeterSample  extends Sample {
 	@Override
 	public String simonToString() {
 		return "Simon Meter: current Count=" + this.counter+
-				", meanRate=" + this.meanRate +
+				", meanRate=" + this.meanRate +",PeakRate="+this.peakRate+
 				simonToStringCommon();
 	}
 
 
-	public double getFifteenMinuteRate() {
-		return fifteenMinuteRate;
-	}
+	
 
 
-	public void setFifteenMinuteRate(double fifteenMinuteRate) {
-		this.fifteenMinuteRate = fifteenMinuteRate;
-	}
-
-
-	public double getFiveMinuteRate() {
-		return fiveMinuteRate;
-	}
-
-
-	public void setFiveMinuteRate(double fiveMinuteRate) {
-		this.fiveMinuteRate = fiveMinuteRate;
-	}
+	
 
 
 	public double getOneMinuteRate() {
@@ -91,6 +79,14 @@ public class MeterSample  extends Sample {
 		this.counter = counter;
 	}
 
+	
+	public void setPeakRate(double peakRate){
+		this.peakRate=peakRate;
+	}
+	
+	public double getPeakRate(){
+		return peakRate;
+	}
 
 	
 

@@ -28,6 +28,8 @@ public class EWMA {
 
     private final LongAdder uncounted = new LongAdder();
     private final double alpha, interval;
+    private volatile double peakRate=0.0;
+    
 
     /**
      * Creates a new EWMA which is equivalent to the UNIX one minute load average and which expects
@@ -77,23 +79,27 @@ public class EWMA {
      * @param n the new value
      */
     public void update(long n) {
-    	//System.out.printf("uncounted upate %d \n", n);
         uncounted.add(n);
     }
 
     /**
      * Mark the passage of time and decay the current rate accordingly.
+     * update peak rate of EWMA
      */
     public void tick() {
-    	//System.out.printf("tick\n");
+    	System.out.printf("tick\n");
         final long count = uncounted.sumThenReset();
         final double instantRate = count / interval;
+        
+        if(instantRate>peakRate){
+        	System.out.printf("INc-tick\n");
+        	peakRate=instantRate;
+        }
         
         if (initialized) {
             rate += (alpha * (instantRate - rate));
         } else {
             rate = instantRate;
-            //System.out.printf("rate:%.10f \n", rate);
             initialized = true;
         }
     }
@@ -106,5 +112,15 @@ public class EWMA {
      */
     public double getRate(TimeUnit rateUnit) {
         return rate * (double) rateUnit.toNanos(1);
+    }
+    
+    /**
+     * Returns the peakRate in the given unit of time
+     * 
+     * @param rateUnit the unit of time
+     * @return the peak rate
+     */
+    public double getPeakRate(TimeUnit rateUnit){
+    	return peakRate * (double) rateUnit.toNanos(1);
     }
 }

@@ -30,35 +30,40 @@ public final class CallbackExample {
 	public static void main(String[] args) throws InterruptedException {
 	
 		
-		SimonManager.callback().addCallback(new org.javasimon.callback.logging.LoggingCallback());
+		//SimonManager.callback().addCallback(new org.javasimon.callback.logging.LoggingCallback());
 		
 		
-//		SimonManager.callback().addCallback(new CallbackSkeleton() {
-//		
-//			@Override
-//			public void onMeterIncrease(Meter meter, long inc, MeterSample sample) {
-////				if(inc%10==0){
-////					System.out.println("\n Meter "+meter.getName()+" current report:"+meter);
-////				}
-//			}
-//			
-//			@Override
-//			public void onStopwatchStart(Split split) {
-//				System.out.println("\nStopwatch " + split.getStopwatch().getName() + " has just been started.");
-//			}
-//
-//			@Override
-//			public void onStopwatchStop(Split split, StopwatchSample sample) {
-//				System.out.println("Stopwatch " + split.getStopwatch().getName()
-//					+ " has just been stopped (" + SimonUtils.presentNanoTime(split.runningFor()) + ").");
-//			}
-//		});
+		SimonManager.callback().addCallback(new CallbackSkeleton() {
+		
+			@Override
+			public void onMeterIncrease(Meter meter, long inc, MeterSample sample) {
+				
+				System.out.println("\n Meter "+meter.getName()+" Increase report:"+meter);
+				
+			}
+			
+			@Override
+			public void onMeterDecrease(Meter meter, long inc, MeterSample sample) {
+				System.out.println("\n Meter "+meter.getName()+" Decrease report:"+meter);
+			}
+			
+			@Override
+			public void onStopwatchStart(Split split) {
+				System.out.println("\nStopwatch " + split.getStopwatch().getName() + " has just been started.");
+			}
+
+			@Override
+			public void onStopwatchStop(Split split, StopwatchSample sample) {
+				System.out.println("Stopwatch " + split.getStopwatch().getName()
+					+ " has just been stopped (" + SimonUtils.presentNanoTime(split.runningFor()) + ").");
+			}
+		});
 
 		//startReport();
 		
-//		MockRuning mRuning=new MockRuning();
-//		
-//		mRuning.running();
+		MockRuning mRuning=new MockRuning();
+		
+		mRuning.running();
 //		Stopwatch sw = SimonManager.getStopwatch(SimonUtils.generateName());
 //		sw.start().stop();
 //
@@ -76,12 +81,12 @@ public final class CallbackExample {
 		//System.out.println("split = " + split);
 		
 		
-		Counter counter=SimonManager.getCounter(SimonUtils.generateName()+"-counter");
-		
-		for(int i=0;i<11;i++){
-			counter.increase();
-			Thread.sleep(2);
-		}
+//		Counter counter=SimonManager.getCounter(SimonUtils.generateName()+"-counter");
+//		
+//		for(int i=0;i<11;i++){
+//			counter.increase();
+//			Thread.sleep(2);
+//		}
 	}
 
 //	private static void startReport() {

@@ -183,4 +183,12 @@ public final class CompositeCallbackImpl implements CompositeCallback {
 		}
 		
 	}
+
+	@Override
+	public void onMeterDecrease(Meter meter, long inc, MeterSample sample) {
+		for(Callback callback: callbacks){
+			callback.onMeterDecrease(meter, inc, sample);
+		}
+		
+	}
 }

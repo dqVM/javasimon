@@ -101,10 +101,19 @@ public interface Callback {
 	
 	
 	/**
-	 * Meter increase event
-	 * 
+	 * Meter increase event {@link MeterSample} valid for the moment after the operation is provided 
+	 * because the callback is executed out of synchronized block 
+	 *
+	 *@param meter modified Meter
+	 *@param inc incremented rate 
+	 *@param sample Meter sampled after the operation
 	 */
 	void onMeterIncrease(Meter counter, long inc, MeterSample sample);
+	
+	
+	
+	
+	void onMeterDecrease(Meter meter, long inc, MeterSample sample);
 	
 	
 	
@@ -189,6 +198,16 @@ public interface Callback {
 
 		/** Counter set to arbitrary value. */
 		COUNTER_SET("set"),
+		
+		
+		
+		/**Meter Increased*/
+		METER_INCREASE("increase"),
+		
+		
+		/** Counter decreased. */
+		METER_DECREASE("decrease"),
+		
 
 		/** Creation of a Simon. */
 		CREATED("created"),

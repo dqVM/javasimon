@@ -12,6 +12,7 @@ public interface Meter extends Simon {
 	double getFiveMinuteRate();
 	double getMeanRate();
 	double getOneMinuteRate();
+	double getPeakRate();
 	
 	
 	@Override
