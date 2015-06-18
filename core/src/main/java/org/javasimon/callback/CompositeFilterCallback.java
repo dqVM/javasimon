@@ -217,7 +217,15 @@ public final class CompositeFilterCallback implements FilterCallback, CompositeC
 
 	@Override
 	public void onMeterIncrease(Meter meter, long inc, MeterSample sample) {
-		if (rulesApplyTo(meter, Event.COUNTER_INCREASE, inc)) {
+		if (rulesApplyTo(meter, Event.METER_INCREASE, inc)) {
+			callback.onMeterIncrease(meter, inc, sample);
+		}
+		
+	}
+
+	@Override
+	public void onMeterDecrease(Meter meter, long inc, MeterSample sample) {
+		if (rulesApplyTo(meter, Event.METER_DECREASE, inc)) {
 			callback.onMeterIncrease(meter, inc, sample);
 		}
 		

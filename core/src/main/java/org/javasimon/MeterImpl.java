@@ -9,18 +9,25 @@ import java.util.concurrent.atomic.AtomicLong;
 public class MeterImpl extends AbstractSimon implements Meter {
 
 	/**
-	 * startTime: Meter start nano Time 
+	 * startTime: Meter 
 	 * 
 	 * */
 	private long startTime; 
 	private long counter; 
 	private long incrementSum;
+	private double peakRate;
 	private AtomicLong lastTick;
 	
 	private static final long TICK_INTERVAL = TimeUnit.SECONDS.toNanos(5);
 	private final EWMA m1Rate = EWMA.oneMinuteEWMA();
     private final EWMA m5Rate = EWMA.fiveMinuteEWMA();
     private final EWMA m15Rate = EWMA.fifteenMinuteEWMA();
+    
+    private EvolvingEvent event;
+    
+    private enum EvolvingEvent{
+    	Increase,Hold,Decrease
+    }
 
 	
 
@@ -35,6 +42,8 @@ public class MeterImpl extends AbstractSimon implements Meter {
 		this.startTime=manager.nanoTime();
 		this.lastTick=new AtomicLong(this.startTime);
 		this.counter=0;
+		this.peakRate=0.0;
+		this.event=EvolvingEvent.Hold;
 	}
 	
 	
@@ -56,7 +65,17 @@ public class MeterImpl extends AbstractSimon implements Meter {
 			updateIncrementalSimonsIncrease(inc, now);
 			sample = sampleIfCallbacksNotEmpty();
 		}
-		manager.callback().onMeterIncrease(this, inc, sample);
+		
+		switch(event){
+		case Increase:
+			manager.callback().onMeterIncrease(this, inc, sample);
+			break;
+		case Decrease:
+			manager.callback().onMeterDecrease(this, inc, sample);
+			break;
+		default:
+			break;
+		}
 		return this;
 	}
 
@@ -77,8 +96,7 @@ public class MeterImpl extends AbstractSimon implements Meter {
 		counter += inc;
 		tickIfNecessary();
 		m1Rate.update(inc);
-		//m5Rate.update(inc);
-		//m15Rate.update(inc);
+		
 	}
 	
 	
@@ -107,18 +125,36 @@ public class MeterImpl extends AbstractSimon implements Meter {
 		 final long oldTick = lastTick.get();
 	     final long newTick = manager.nanoTime();
 	     final long age = newTick - oldTick;
-	      if (age > TICK_INTERVAL) {
+	     boolean ticked=false;
+	     if (age > TICK_INTERVAL) {
 	        	
 	            final long newIntervalStartTick = newTick - age % TICK_INTERVAL;
 	            if (lastTick.compareAndSet(oldTick, newIntervalStartTick)) {
 	                final long requiredTicks = age / TICK_INTERVAL;
+	                ticked=true;
 	                for (long i = 0; i < requiredTicks; i++) {
 	                    m1Rate.tick();
-	                   // m5Rate.tick();
-	                    //m15Rate.tick();
+	                    
 	                }
 	            }
 	        }
+	     
+	     if(ticked){
+	    	event=EvolvingEvent.Hold;
+	    	double diff=peakRate-m1Rate.getPeakRate(TimeUnit.SECONDS);
+	    	System.out.println("diff:"+diff+"\n");
+	    	if(diff>1E-7){
+	    		event=EvolvingEvent.Decrease;
+	    		//System.out.printf("INC\n");
+	    	}
+	    	
+	    	if(diff<-1*1E-7){
+	    		event=EvolvingEvent.Increase;
+	    		//System.out.printf("-INC\n");
+	    	}
+	    	
+	     }
+	     
 	}
 
 
@@ -140,9 +176,8 @@ public class MeterImpl extends AbstractSimon implements Meter {
 	public double getOneMinuteRate() {
 		tickIfNecessary();
 		return m1Rate.getRate(TimeUnit.SECONDS);
-		
-		
 	}
+
 	
 	
 	@Override
@@ -158,14 +193,17 @@ public class MeterImpl extends AbstractSimon implements Meter {
         return m15Rate.getRate(TimeUnit.SECONDS);
 	}
 	
+	
+
+	
+	
 	@Override
 	public synchronized MeterSample sample() {
 		MeterSample sample = new MeterSample();
 		
 		sample.setCounter(counter);
 		sample.setOneMinuteRate(getOneMinuteRate());
-		sample.setFiveMinuteRate(getFiveMinuteRate());
-		sample.setFifteenMinuteRate(getFifteenMinuteRate());
+		sample.setPeakRate(peakRate);
 		sample.setMeanRate(getMeanRate());
 		sampleCommon(sample);
 		return sample;
@@ -183,6 +221,8 @@ public class MeterImpl extends AbstractSimon implements Meter {
 		// TODO Auto-generated method stub
 		return null;
 	}
+	
+	
 
 
 	public long getIncrementSum() {
@@ -194,7 +234,7 @@ public class MeterImpl extends AbstractSimon implements Meter {
 		this.incrementSum = incrementSum;
 	}	
 	/**
-	 * Returns Simon basic information, Meter, counter, meanRate, lastMinuteRate.
+	 * Returns Simon basic information, Meter, counter, meanRate, PeakRate.
 	 *
 	 * @return basic information, meter, count, meanRate, lastMinuteRate 
 	 * @see AbstractSimon#toString()
@@ -203,9 +243,16 @@ public class MeterImpl extends AbstractSimon implements Meter {
 	public synchronized String toString() {
 		/*re-define */
 		return "Simon Meter: current Count=" + getCount()+
-			", meanRate=" + getMeanRate() +"events/seconds"+
-			", OneMinuteRate=" + getOneMinuteRate()+"events/seconds"+
+			", meanRate=" + getMeanRate() +"events/second"+
+			", OneMinuteRate=" + getOneMinuteRate()+"events/second"+
+			",PeakRate="+getPeakRate()+"events/second"+
 			super.toString();
+	}
+
+
+	@Override
+	public double getPeakRate() {
+		return peakRate;
 	}
 
 

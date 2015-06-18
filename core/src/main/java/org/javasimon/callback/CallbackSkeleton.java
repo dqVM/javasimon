@@ -75,4 +75,10 @@ public class CallbackSkeleton implements Callback {
 	@Override
 	public void onMeterIncrease(Meter counter, long inc, MeterSample sample) {
 	}
+
+	@Override
+	public void onMeterDecrease(Meter meter, long inc, MeterSample sample) {
+		// TODO Auto-generated method stub
+		
+	}
 }
