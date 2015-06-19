@@ -146,13 +146,16 @@ public class MeterImpl extends AbstractSimon implements Meter {
 	     
 	     if(ticked){
 	    	double diff=peakRate-m1Rate.getPeakRate(TimeUnit.SECONDS);
+	    
 	    	event=EvolvingEvent.Hold;
 	    	if(diff>1E-7){
 	    		event=EvolvingEvent.Decrease;
 	    	}
 	    	if(diff<-1*1E-7){
 	    		event=EvolvingEvent.Increase;
+	    		peakRate-=diff;
 	    	}
+	    	
 	    	
 	     }
 	     
