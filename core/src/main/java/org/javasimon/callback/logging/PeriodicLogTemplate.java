@@ -16,7 +16,7 @@ public class PeriodicLogTemplate<C> extends DelegateLogTemplate<C> {
 	/** Clock object used to get current time */
 	private final SimonClock clock;
 
-	/** Timestamp of next invocation. */
+	/** Time-stamp of next invocation. */
 	private long nextTime;
 
 	/**

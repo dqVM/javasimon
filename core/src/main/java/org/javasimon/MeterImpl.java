@@ -4,7 +4,12 @@ import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
-//import org.javasimon.utils.SimonUtils;
+/***
+ * 
+ * 
+ * @author xiaod
+ *
+ */
 
 public class MeterImpl extends AbstractSimon implements Meter {
 
@@ -20,8 +25,8 @@ public class MeterImpl extends AbstractSimon implements Meter {
 	
 	private static final long TICK_INTERVAL = TimeUnit.SECONDS.toNanos(5);
 	private final EWMA m1Rate = EWMA.oneMinuteEWMA();
-    private final EWMA m5Rate = EWMA.fiveMinuteEWMA();
-    private final EWMA m15Rate = EWMA.fifteenMinuteEWMA();
+//    private final EWMA m5Rate = EWMA.fiveMinuteEWMA();
+//    private final EWMA m15Rate = EWMA.fifteenMinuteEWMA();
     
     private EvolvingEvent event;
     
@@ -140,17 +145,13 @@ public class MeterImpl extends AbstractSimon implements Meter {
 	        }
 	     
 	     if(ticked){
-	    	event=EvolvingEvent.Hold;
 	    	double diff=peakRate-m1Rate.getPeakRate(TimeUnit.SECONDS);
-	    	System.out.println("diff:"+diff+"\n");
+	    	event=EvolvingEvent.Hold;
 	    	if(diff>1E-7){
 	    		event=EvolvingEvent.Decrease;
-	    		//System.out.printf("INC\n");
 	    	}
-	    	
 	    	if(diff<-1*1E-7){
 	    		event=EvolvingEvent.Increase;
-	    		//System.out.printf("-INC\n");
 	    	}
 	    	
 	     }
@@ -180,18 +181,7 @@ public class MeterImpl extends AbstractSimon implements Meter {
 
 	
 	
-	@Override
-	public double getFiveMinuteRate() {
-		// TODO Auto-generated method stub
-		tickIfNecessary();
-		return m5Rate.getRate(TimeUnit.SECONDS);
-	}
-	
-	@Override
-	public double getFifteenMinuteRate() {
-		tickIfNecessary();
-        return m15Rate.getRate(TimeUnit.SECONDS);
-	}
+
 	
 	
 

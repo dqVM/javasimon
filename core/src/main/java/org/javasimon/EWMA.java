@@ -87,12 +87,10 @@ public class EWMA {
      * update peak rate of EWMA
      */
     public void tick() {
-    	System.out.printf("tick\n");
         final long count = uncounted.sumThenReset();
         final double instantRate = count / interval;
         
         if(instantRate>peakRate){
-        	System.out.printf("INc-tick\n");
         	peakRate=instantRate;
         }
         
@@ -101,6 +99,7 @@ public class EWMA {
         } else {
             rate = instantRate;
             initialized = true;
+            peakRate=instantRate;
         }
     }
 
